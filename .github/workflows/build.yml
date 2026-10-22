@@ -1,15 +1,14 @@
-name: Build Action
+name: Build zAuctionHouse
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main]
   pull_request:
-    types: [ opened, synchronize, reopened ]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,14 +16,37 @@ concurrency:
 
 jobs:
   build:
-    name: Build and Publish zAuctionHouse
-    uses: GroupeZ-dev/actions/.github/workflows/build.yml@main
-    with:
-      project-name: "zAuctionHouse"
-      publish: true
-      project-to-publish: "API:publish"
-      discord-avatar-url: "https://groupez.dev/storage/images/1.png"
-    secrets:
-      WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
-      MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-      MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+    name: Build Paper plugin
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build shaded plugin JAR
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon clean build \
+            -Phooks.zelauction=false \
+            -Phooks.donutauction=false \
+            -Phooks.crazyauctions=false
+        # These optional hooks depend on external plugin APIs and are not
+        # required to run zAuctionHouse itself.
+
+      - name: Upload plugin JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: zAuctionHouse-plugin
+          path: target/zAuctionHouse*.jar
+          if-no-files-found: error
+          retention-days: 7
