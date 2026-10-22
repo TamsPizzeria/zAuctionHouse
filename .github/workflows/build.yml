@@ -43,6 +43,11 @@ jobs:
         # These optional hooks depend on external plugin APIs and are not
         # required to run zAuctionHouse itself.
 
+      - name: Show packaged plugin checksum
+        run: |
+          ls -lh target/zAuctionHouse*.jar
+          sha256sum target/zAuctionHouse*.jar
+
       - name: Upload plugin JAR
         uses: actions/upload-artifact@v4
         with:
